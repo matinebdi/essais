@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
+import requests
 from datetime import datetime
 from PIL import Image
 
@@ -53,6 +54,19 @@ def calculate_delivery_time():
 def generate_order_id():
     return f"ORDER-{datetime.now().strftime('%Y%m%d')}-{np.random.randint(1000, 9999)}"
 
+# --- Webhook Integration ---
+WEBHOOK_URL = "https://matin.app.n8n.cloud/webhook-test/a11168a8-d8bd-44c5-be05-e0da3cbfe1e2"
+
+def send_webhook(data):
+    try:
+        response = requests.post(WEBHOOK_URL, json=data)
+        if response.status_code == 200:
+            st.success("Webhook envoyé avec succès !")
+        else:
+            st.error(f"Erreur lors de l'envoi du webhook: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Erreur de connexion au webhook: {e}")
+
 # --- Custom CSS ---
 st.markdown("""
 <style>
@@ -97,6 +111,8 @@ def login_page():
             
             if st.form_submit_button("Se connecter", type="primary"):
                 if username == "admin" and password == st.secrets.get("ADMIN_PASSWORD", "adminpassword"):
+                    # Envoyer un webhook lors de la connexion
+                    send_webhook({"event": "login", "username": username, "timestamp": datetime.now().isoformat()})
                     st.session_state.logged_in = True
                     st.session_state.username = username
                     rerun()
